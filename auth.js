@@ -132,3 +132,44 @@ document.getElementById("logout-button").addEventListener("click", async () => {
     authMessage("login-error", error.message);
   }
 })();
+document.getElementById("forgot-admin-pin").addEventListener("click", () => {
+  document.getElementById("login-form").hidden = true;
+  document.getElementById("admin-setup-form").hidden = true;
+  document.getElementById("admin-recovery-form").hidden = false;
+  document.getElementById("recovery-error").textContent = "";
+});
+document.getElementById("cancel-recovery").addEventListener("click", () => {
+  document.getElementById("admin-recovery-form").hidden = true;
+  document.getElementById("login-form").hidden = false;
+});
+document.getElementById("admin-recovery-form").addEventListener("submit", async event => {
+  event.preventDefault();
+  const error = document.getElementById("recovery-error");
+  const button = document.getElementById("recovery-submit");
+  const secret = document.getElementById("recovery-secret").value;
+  const pin = document.getElementById("recovery-pin").value;
+  const confirm = document.getElementById("recovery-pin-confirm").value;
+  error.textContent = "";
+  if (!/^\\d{6,12}$/.test(pin)) { error.textContent = "PIN must contain 6–12 digits."; return; }
+  if (pin !== confirm) { error.textContent = "The PINs do not match."; return; }
+  button.disabled = true;
+  try {
+    const response = await fetch(AUTH_API, {
+      method: "POST",
+      headers: { "Content-Type":"application/json", apikey:AUTH_KEY, "x-recovery-secret":secret },
+      body: JSON.stringify({ action:"recover_admin_pin", admin_pin:pin })
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || "PIN recovery failed.");
+    localStorage.removeItem(AUTH_SESSION);
+    document.getElementById("admin-recovery-form").hidden = true;
+    document.getElementById("login-form").hidden = false;
+    document.getElementById("login-role").value = "admin";
+    document.getElementById("login-employee-field").hidden = true;
+    document.getElementById("login-error").textContent = "Admin PIN reset successfully. Sign in with your new PIN.";
+    document.getElementById("recovery-secret").value = "";
+    document.getElementById("recovery-pin").value = "";
+    document.getElementById("recovery-pin-confirm").value = "";
+  } catch (err) { error.textContent = err.message; }
+  finally { button.disabled = false; }
+});
