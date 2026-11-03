@@ -16,6 +16,7 @@
       <div class="field"><label for="login-pin">PIN</label><input id="login-pin" type="password" inputmode="numeric" autocomplete="current-password" minlength="6" maxlength="12" required placeholder="Enter your PIN"></div>
       <p class="error" id="login-error"></p><button class="primary" type="submit" id="login-submit">Sign in</button>
       <p class="tiny muted">Your sign-in will be remembered on this device until you log out.</p>
+      <button class="text-button" type="button" id="forgot-admin-pin">Forgot admin PIN?</button>
     </form>
     <form class="login-card" id="admin-setup-form" hidden>
       <p class="eyebrow">FIRST-TIME SETUP</p><h2>Set admin PIN</h2>
@@ -24,6 +25,15 @@
       <div class="field"><label for="setup-pin">ADMIN PIN (6–12 DIGITS)</label><input id="setup-pin" type="password" inputmode="numeric" minlength="6" maxlength="12" required></div>
       <p class="error" id="setup-error"></p><button class="primary" type="submit">Save admin PIN</button>
       <button class="secondary" type="button" id="back-login">Back to login</button>
+    </form>
+    <form class="login-card" id="admin-recovery-form" hidden>
+      <p class="eyebrow">ACCOUNT RECOVERY</p><h2>Reset admin PIN</h2>
+      <p class="muted">Enter your private recovery credential configured in Supabase and choose a new admin PIN.</p>
+      <div class="field"><label for="recovery-secret">ADMIN RECOVERY CREDENTIAL</label><input id="recovery-secret" type="password" autocomplete="off" required></div>
+      <div class="field"><label for="recovery-pin">NEW ADMIN PIN (6–12 DIGITS)</label><input id="recovery-pin" type="password" inputmode="numeric" minlength="6" maxlength="12" required></div>
+      <div class="field"><label for="recovery-pin-confirm">CONFIRM NEW ADMIN PIN</label><input id="recovery-pin-confirm" type="password" inputmode="numeric" minlength="6" maxlength="12" required></div>
+      <p class="error" id="recovery-error"></p><button class="primary" type="submit" id="recovery-submit">Reset admin PIN</button>
+      <button class="secondary" type="button" id="cancel-recovery">Back to login</button>
     </form>
   </section>
   <main class="shell" id="app-shell" hidden>
