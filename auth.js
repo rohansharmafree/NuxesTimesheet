@@ -150,7 +150,7 @@ document.getElementById("admin-recovery-form").addEventListener("submit", async 
   const pin = document.getElementById("recovery-pin").value;
   const confirm = document.getElementById("recovery-pin-confirm").value;
   error.textContent = "";
-  if (!/^\\d{6,12}$/.test(pin)) { error.textContent = "PIN must contain 6–12 digits."; return; }
+  if (!/^\d{6,12}$/.test(pin)) { error.textContent = "PIN must contain 6–12 digits."; return; }
   if (pin !== confirm) { error.textContent = "The PINs do not match."; return; }
   button.disabled = true;
   try {
