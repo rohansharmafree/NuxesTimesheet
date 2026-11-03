@@ -78,6 +78,11 @@ saveWeek = async function() {
     toast("Timesheet saved.");
   }catch(e){toast("Save failed: "+e.message);}
 };
+
+// app.js binds its original local-only save handler before this file loads.
+// Rebind the button after replacing saveWeek so every save goes through Supabase.
+$("save-week").onclick = saveWeek;
+
 $("member-form").onsubmit=async e=>{
   e.preventDefault();
   const name=$("member-name").value.trim(),pin=$("member-pin").value;
