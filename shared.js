@@ -104,25 +104,28 @@ $("member-form").insertAdjacentHTML("beforeend",'<div class="field"><label for="
 // Reorder PIN field before the submit button for a natural form layout.
 const pinInput=$("member-pin");$("member-form").insertBefore(pinInput.parentElement,$("member-form").querySelector('button[type="submit"]'));
 
-// Make employee removal persistent in the shared database (deactivate, preserve history).
-const renderManageWithServerRemoval = renderManage;
-renderManage = function() {
-  renderManageWithServerRemoval();
-  document.querySelectorAll("[data-del-member]").forEach(button => {
-    button.onclick = async () => {
-      const name = button.dataset.delMember;
-      const employee = window.sharedEmployees.find(item => item.name === name);
-      if (!employee) { toast("Employee record not found. Refresh the page."); return; }
-      if (!confirm(`Remove ${name} from the active team? Their historical timesheet records will be preserved.`)) return;
-      button.disabled = true;
-      try {
-        await sharedCall("remove_employee", { employee_id: employee.id });
-        await refreshSharedData();
-        toast("Employee removed from the active team. Historical records are preserved.");
-      } catch (error) {
-        button.disabled = false;
-        toast("Could not remove employee: " + error.message);
-      }
-    };
-  });
-};
+// Handle employee removal at document level so no later render handler can override it.
+document.addEventListener("click", async event => {
+  const button = event.target.closest("[data-del-member]");
+  if (!button) return;
+  event.preventDefault();
+  event.stopPropagation();
+  event.stopImmediatePropagation();
+  const name = button.dataset.delMember;
+  const employee = (window.sharedEmployees || []).find(item => item.name === name);
+  if (!employee) {
+    toast("Employee record not found. Please refresh the page and try again.");
+    return;
+  }
+  if (!confirm(`Remove ${name} from the active team? Historical timesheet records will be preserved.`)) return;
+  button.disabled = true;
+  try {
+    const result = await sharedCall("remove_employee", { employee_id: employee.id });
+    if (!result.ok) throw new Error(result.error || "Removal was not confirmed by the server.");
+    await refreshSharedData();
+    toast("Employee removed from the active team.");
+  } catch (error) {
+    button.disabled = false;
+    toast("Could not remove employee: " + error.message);
+  }
+}, true);
