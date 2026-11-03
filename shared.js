@@ -196,7 +196,7 @@ $("export-monthly-xlsx").onclick = exportMonthlyExcel;
 $("user-pin-form").onsubmit=async e=>{
   e.preventDefault();
   const pin=$("user-pin").value;
-  if(!/^\\d{6,12}$/.test(pin)){toast("User PIN must contain 6–12 digits.");return;}
+  if(!/^\d{6,12}$/.test(pin)){toast("User PIN must contain 6–12 digits.");return;}
   try{
     await sharedCall("set_user_pin",{pin});
     $("user-pin").value="";
