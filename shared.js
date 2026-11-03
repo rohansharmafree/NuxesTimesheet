@@ -23,10 +23,7 @@ async function refreshSharedData() {
     name:byId.get(e.employee_id)?.name||"",date:e.work_date,hours:Number(e.hours)
   }));
   refreshMembers();
-  if(authSession.role==="employee"){
-    $("employee-select").innerHTML="<option>"+esc(authSession.employee.name)+"</option>";
-    $("employee-select").disabled=true;
-  } else {
+  if(authSession.role==="admin" || authSession.role==="user"){
     const prev=$("employee-select").value;
     $("employee-select").innerHTML=state.members.map(n=>"<option>"+esc(n)+"</option>").join("");
     if(state.members.includes(prev))$("employee-select").value=prev;
@@ -52,7 +49,7 @@ renderProjectSelect = function() {
 };
 addTaskToWeek = async function(projectId,title) {
   const employee=window.sharedEmployees.find(e=>e.name===$("employee-select").value);
-  const employeeId=authSession.role==="employee"?authSession.employee.id:employee?.id;
+  const employeeId=employee?.id;
   if(!employeeId){toast("Select an employee first.");return;}
   try{
     const r=await sharedCall("create_task",{project_id:projectId,employee_id:employeeId,title});
@@ -63,8 +60,9 @@ addTaskToWeek = async function(projectId,title) {
 saveWeek = async function() {
   const who=$("employee-select").value;
   const employee=window.sharedEmployees.find(e=>e.name===who);
-  const employeeId=authSession.role==="employee"?authSession.employee.id:employee?.id;
+  const employeeId=employee?.id;
   if(!employeeId){toast("Select an employee.");return;}
+  if(!confirm("You are saving this timesheet for "+who+". Continue?")) return;
   const taskIds=state.tasks.filter(t=>t.employeeId===employeeId).map(t=>t.id);
   const items=[];
   for(const taskId of taskIds)for(const day of dates()){
@@ -86,12 +84,12 @@ $("save-week").onclick = saveWeek;
 $("member-form").onsubmit=async e=>{
   e.preventDefault();
   const name=$("member-name").value.trim(),pin=$("member-pin").value;
-  if(!name||!/^\d{6,12}$/.test(pin)){toast("Enter a name and a 6–12 digit PIN.");return;}
+  if(!name){toast("Enter an employee name.");return;}
   try{
-    await sharedCall("create_employee",{name,pin});
-    $("member-name").value="";$("member-pin").value="";
-    await refreshSharedData();await loadLoginEmployees();
-    toast("Employee created. Share their PIN privately.");
+    await sharedCall("create_employee",{name});
+    $("member-name").value="";
+    await refreshSharedData();
+    toast("Employee added.");
   }catch(err){toast(err.message);}
 };
 $("project-form").onsubmit=async e=>{
@@ -105,9 +103,7 @@ $("project-form").onsubmit=async e=>{
     $("project-name").value="";await refreshSharedData();toast("Project created and assigned.");
   }catch(err){toast(err.message);}
 };
-$("member-form").insertAdjacentHTML("beforeend",'<div class="field"><label for="member-pin">EMPLOYEE PIN (6–12 DIGITS)</label><input id="member-pin" type="password" inputmode="numeric" minlength="6" maxlength="12" required placeholder="Set employee PIN"></div>');
-// Reorder PIN field before the submit button for a natural form layout.
-const pinInput=$("member-pin");$("member-form").insertBefore(pinInput.parentElement,$("member-form").querySelector('button[type="submit"]'));
+
 
 // Handle employee removal at document level so no later render handler can override it.
 document.addEventListener("click", async event => {
@@ -147,10 +143,9 @@ function refreshMonthlyEmployeeOptions() {
       state.members.map(name => `<option value="${esc(name)}">${esc(name)}</option>`).join("");
     if ([...select.options].some(o => o.value === prior)) select.value = prior;
   } else {
-    const name = authSession?.employee?.name || state.members[0] || "";
-    select.innerHTML = name ? `<option value="${esc(name)}">${esc(name)}</option>` : "";
-    select.value = name;
-    select.disabled = true;
+    select.innerHTML = state.members.map(name => `<option value="${esc(name)}">${esc(name)}</option>`).join("");
+    if ([...select.options].some(o => o.value === prior)) select.value = prior;
+    select.disabled = false;
   }
 }
 function exportMonthlyExcel() {
@@ -196,3 +191,16 @@ function exportMonthlyExcel() {
 }
 $("monthly-report-month").value = new Date().toISOString().slice(0,7);
 $("export-monthly-xlsx").onclick = exportMonthlyExcel;
+
+
+$("user-pin-form").onsubmit=async e=>{
+  e.preventDefault();
+  const pin=$("user-pin").value;
+  if(!/^\\d{6,12}$/.test(pin)){toast("User PIN must contain 6–12 digits.");return;}
+  try{
+    await sharedCall("set_user_pin",{pin});
+    $("user-pin").value="";
+    $("user-pin-status").textContent="Shared User PIN saved. Previous User sessions have been signed out.";
+    toast("Shared User PIN updated.");
+  }catch(err){toast(err.message);}
+};
