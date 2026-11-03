@@ -116,6 +116,15 @@ document.getElementById("logout-button").addEventListener("click", async () => {
     authMessage("login-error", error.message);
   }
 })();
+// Hidden recovery shortcut: Ctrl+Alt+R opens admin PIN recovery without adding login-screen clutter.
+document.addEventListener("keydown", event => {
+  if (event.ctrlKey && event.altKey && event.key.toLowerCase() === "r") {
+    document.getElementById("login-form").hidden = true;
+    document.getElementById("admin-setup-form").hidden = true;
+    document.getElementById("admin-recovery-form").hidden = false;
+    document.getElementById("recovery-error").textContent = "";
+  }
+});
 const forgotAdminPinButton = document.getElementById("forgot-admin-pin");
 if (forgotAdminPinButton) forgotAdminPinButton.addEventListener("click", () => {
   document.getElementById("login-form").hidden = true;
