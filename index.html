@@ -96,6 +96,14 @@
         <div class="week-nav"><button class="icon-button" id="report-prev">‹</button><strong id="report-week-label"></strong><button class="icon-button" id="report-next">›</button></div>
         <button class="secondary" id="export-csv">Export CSV</button>
       </div>
+      <div class="monthly-export">
+        <div><h3>Monthly Excel report</h3><p class="muted tiny">Export monthly effort by employee, project and task.</p></div>
+        <div class="monthly-export-controls">
+          <label class="field compact" for="monthly-report-month">MONTH<input id="monthly-report-month" type="month"></label>
+          <label class="field compact" for="monthly-report-employee">EMPLOYEE<select id="monthly-report-employee"></select></label>
+          <button class="primary" id="export-monthly-xlsx" type="button">Export Excel</button>
+        </div>
+      </div>
       <div class="summary-cards">
         <div class="summary-card"><span>Total team effort</span><strong id="team-total">0 h</strong></div>
         <div class="summary-card"><span>Employees active</span><strong id="people-total">0</strong></div>
@@ -136,6 +144,7 @@
     </form>
   </dialog>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="app.js"></script>
   <script src="auth.js"></script>
   <script src="shared.js"></script>
