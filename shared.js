@@ -37,7 +37,7 @@ showTimesheet = function(session) {
   $("login-screen").hidden=true; $("app-shell").hidden=false;
   const admin=session.role==="admin";
   $("mode-select").value=admin?"admin":"user"; $("mode-select").disabled=true;
-  $("mode-pill").textContent=admin?"Admin":"Employee";
+  $("mode-pill").textContent=admin?"Admin":"User access";
   $("manage-tab").hidden=!admin;
   refreshSharedData().catch(e=>toast("Database error: "+e.message));
 };
