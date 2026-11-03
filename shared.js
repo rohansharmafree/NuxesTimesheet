@@ -83,7 +83,7 @@ $("save-week").onclick = saveWeek;
 
 $("member-form").onsubmit=async e=>{
   e.preventDefault();
-  const name=$("member-name").value.trim(),pin=$("member-pin").value;
+  const name=$("member-name").value.trim();
   if(!name){toast("Enter an employee name.");return;}
   try{
     await sharedCall("create_employee",{name});
