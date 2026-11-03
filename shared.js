@@ -81,7 +81,7 @@ saveWeek = async function() {
 $("member-form").onsubmit=async e=>{
   e.preventDefault();
   const name=$("member-name").value.trim(),pin=$("member-pin").value;
-  if(!name||!/^\\d{6,12}$/.test(pin)){toast("Enter a name and a 6–12 digit PIN.");return;}
+  if(!name||!/^\d{6,12}$/.test(pin)){toast("Enter a name and a 6–12 digit PIN.");return;}
   try{
     await sharedCall("create_employee",{name,pin});
     $("member-name").value="";$("member-pin").value="";
