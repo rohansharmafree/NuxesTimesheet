@@ -32,7 +32,7 @@ async function refreshSharedData() {
     if(state.members.includes(prev))$("employee-select").value=prev;
     $("employee-select").disabled=false;
   }
-  renderManage(); renderProjectSelect(); loadWeek();
+  renderManage(); renderProjectSelect(); loadWeek(); refreshMonthlyEmployeeOptions();
   $("save-status").textContent="Connected to shared team database";
 }
 showTimesheet = function(session) {
@@ -134,3 +134,65 @@ document.addEventListener("click", async event => {
     toast("Could not remove employee: " + error.message);
   }
 }, true);
+
+
+// Monthly Excel export. Employees receive only their own rows from the scoped API;
+// admins can export one employee or all active employees in one workbook.
+function refreshMonthlyEmployeeOptions() {
+  const select = $("monthly-report-employee");
+  if (!select) return;
+  const prior = select.value;
+  if (authSession?.role === "admin") {
+    select.innerHTML = '<option value="__all__">All employees</option>' +
+      state.members.map(name => `<option value="${esc(name)}">${esc(name)}</option>`).join("");
+    if ([...select.options].some(o => o.value === prior)) select.value = prior;
+  } else {
+    const name = authSession?.employee?.name || state.members[0] || "";
+    select.innerHTML = name ? `<option value="${esc(name)}">${esc(name)}</option>` : "";
+    select.value = name;
+    select.disabled = true;
+  }
+}
+function exportMonthlyExcel() {
+  if (!window.XLSX) { toast("Excel export library did not load. Refresh and try again."); return; }
+  const month = $("monthly-report-month").value;
+  if (!/^\\d{4}-\\d{2}$/.test(month)) { toast("Choose a month first."); return; }
+  const selectedEmployee = $("monthly-report-employee").value;
+  const rows = state.entries.filter(e => e.date?.startsWith(month) &&
+    (selectedEmployee === "__all__" || e.name === selectedEmployee));
+  if (!rows.length) { toast("No saved effort found for this month."); return; }
+  const byEmployee = new Map();
+  for (const entry of rows) {
+    const task = state.tasks.find(t => t.id === entry.taskId) || {};
+    const project = state.projects.find(p => p.id === task.projectId) || {};
+    const row = {
+      Employee: entry.name,
+      Project: project.name || "Project unavailable",
+      Task: task.title || "Task unavailable",
+      Date: entry.date,
+      Hours: Number(entry.hours)
+    };
+    if (!byEmployee.has(entry.name)) byEmployee.set(entry.name, []);
+    byEmployee.get(entry.name).push(row);
+  }
+  const workbook = XLSX.utils.book_new();
+  const summary = [];
+  for (const [employee, employeeRows] of [...byEmployee.entries()].sort((a,b)=>a[0].localeCompare(b[0]))) {
+    employeeRows.sort((a,b)=>a.Date.localeCompare(b.Date)||a.Project.localeCompare(b.Project)||a.Task.localeCompare(b.Task));
+    const total = employeeRows.reduce((sum,row)=>sum+row.Hours,0);
+    summary.push({Employee:employee, "Total hours":Number(total.toFixed(2)), "Entries":employeeRows.length});
+    const sheet = XLSX.utils.json_to_sheet(employeeRows);
+    sheet["!cols"] = [{wch:22},{wch:30},{wch:38},{wch:14},{wch:12}];
+    const safeName = employee.replace(/[\\/?*\\[\\]:]/g," ").slice(0,31) || "Employee";
+    let sheetName = safeName, suffix = 1;
+    while (workbook.SheetNames.includes(sheetName)) sheetName = (safeName.slice(0,26)+"_"+suffix++);
+    XLSX.utils.book_append_sheet(workbook, sheet, sheetName);
+  }
+  const summarySheet = XLSX.utils.json_to_sheet(summary);
+  summarySheet["!cols"] = [{wch:24},{wch:16},{wch:12}];
+  XLSX.utils.book_append_sheet(workbook, summarySheet, "Monthly Summary");
+  XLSX.writeFile(workbook, `Timesheet_${month}_${selectedEmployee === "__all__" ? "All_Employees" : selectedEmployee.replace(/[^a-z0-9_-]/gi,"_")}.xlsx`);
+  toast("Monthly Excel report downloaded.");
+}
+$("monthly-report-month").value = new Date().toISOString().slice(0,7);
+$("export-monthly-xlsx").onclick = exportMonthlyExcel;
