@@ -127,6 +127,17 @@
           </form>
           <p class="tiny muted" id="user-pin-status">Shared User PIN is not configured yet. Set it before User access can begin.</p>
         </div>
+        <div class="manage-card">
+          <h3>Change Admin PIN</h3>
+          <p class="muted tiny">Change the administrator PIN whenever needed. Your current session will remain active.</p>
+          <form id="admin-pin-form">
+            <div class="field"><label for="current-admin-pin">CURRENT ADMIN PIN</label><input id="current-admin-pin" type="password" inputmode="numeric" minlength="6" maxlength="12" required autocomplete="current-password"></div>
+            <div class="field"><label for="new-admin-pin">NEW ADMIN PIN (6–12 DIGITS)</label><input id="new-admin-pin" type="password" inputmode="numeric" minlength="6" maxlength="12" required autocomplete="new-password"></div>
+            <div class="field"><label for="confirm-admin-pin">CONFIRM NEW ADMIN PIN</label><input id="confirm-admin-pin" type="password" inputmode="numeric" minlength="6" maxlength="12" required autocomplete="new-password"></div>
+            <button class="primary" type="submit">Change Admin PIN</button>
+          </form>
+          <p class="tiny muted" id="admin-pin-status" aria-live="polite"></p>
+        </div>
       <div class="danger-zone">
         <div><h3>Data backup</h3><p class="muted tiny">Your entries are saved in this browser on this computer. Download a JSON backup regularly.</p></div>
         <div class="backup-actions"><button class="secondary" id="backup-data">Download backup</button><label class="file-button secondary">Restore backup<input id="restore-file" type="file" accept="application/json,.json"></label><button class="danger" id="clear-data">Clear all data</button></div>
