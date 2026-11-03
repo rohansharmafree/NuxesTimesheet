@@ -204,3 +204,41 @@ $("user-pin-form").onsubmit=async e=>{
     toast("Shared User PIN updated.");
   }catch(err){toast(err.message);}
 };
+
+
+// Admin can change the permanent Admin PIN from Manage Team.
+$("admin-pin-form").onsubmit = async e => {
+  e.preventDefault();
+  const current_pin = $("current-admin-pin").value;
+  const new_pin = $("new-admin-pin").value;
+  const confirm_pin = $("confirm-admin-pin").value;
+  const status = $("admin-pin-status");
+  status.textContent = "";
+  if (!/^\\d{6,12}$/.test(current_pin) || !/^\\d{6,12}$/.test(new_pin)) {
+    status.textContent = "PINs must contain 6–12 digits.";
+    return;
+  }
+  if (new_pin !== confirm_pin) {
+    status.textContent = "The new PINs do not match.";
+    return;
+  }
+  if (current_pin === new_pin) {
+    status.textContent = "Choose a new PIN different from the current PIN.";
+    return;
+  }
+  const submit = e.currentTarget.querySelector('button[type="submit"]');
+  submit.disabled = true;
+  try {
+    await sharedCall("set_admin_pin", { current_pin, new_pin });
+    $("current-admin-pin").value = "";
+    $("new-admin-pin").value = "";
+    $("confirm-admin-pin").value = "";
+    status.textContent = "Admin PIN changed successfully. Keep your new PIN secure.";
+    toast("Admin PIN changed.");
+  } catch (error) {
+    status.textContent = error.message;
+    toast(error.message);
+  } finally {
+    submit.disabled = false;
+  }
+};
