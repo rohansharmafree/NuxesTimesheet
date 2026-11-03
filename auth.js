@@ -51,10 +51,14 @@ function showTimesheet(session) {
     renderProjectSelect();
   }
 }
-document.getElementById("login-role").addEventListener("change", () => {
-  document.getElementById("login-employee-field").hidden =
-    document.getElementById("login-role").value === "admin";
-});
+function updateLoginRoleFields() {
+  const isAdmin = document.getElementById("login-role").value === "admin";
+  document.getElementById("login-employee-field").hidden = isAdmin;
+  // A hidden required employee selector blocks the browser from submitting the admin form.
+  document.getElementById("login-employee").required = !isAdmin;
+}
+document.getElementById("login-role").addEventListener("change", updateLoginRoleFields);
+updateLoginRoleFields();
 document.getElementById("login-form").addEventListener("submit", async event => {
   event.preventDefault();
   authMessage("login-error", "");
