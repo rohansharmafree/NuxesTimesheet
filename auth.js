@@ -16,15 +16,6 @@ async function authRequest(action, payload = {}, token = "") {
 function authMessage(id, message) {
   document.getElementById(id).textContent = message || "";
 }
-async function loadLoginEmployees() {
-  const result = await authRequest("employee_options");
-  const select = document.getElementById("login-employee");
-  select.innerHTML = (result.employees || []).map(employee =>
-    '<option value="' + employee.id + '">' + employee.name.replace(/[&<>"]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c])) + '</option>'
-  ).join("");
-  document.getElementById("login-employee-field").hidden =
-    document.getElementById("login-role").value === "admin";
-}
 function showTimesheet(session) {
   authSession = session;
   document.getElementById("login-screen").hidden = true;
@@ -52,19 +43,13 @@ function showTimesheet(session) {
   }
 }
 function updateLoginRoleFields() {
-  const isAdmin = document.getElementById("login-role").value === "admin";
-  document.getElementById("login-employee-field").hidden = isAdmin;
-  // A hidden required employee selector blocks the browser from submitting the admin form.
-  document.getElementById("login-employee").required = !isAdmin;
+  // Login deliberately has no employee selector: User PIN is shared by the team.
 }
-document.getElementById("login-role").addEventListener("change", updateLoginRoleFields);
-updateLoginRoleFields();
 document.getElementById("login-form").addEventListener("submit", async event => {
   event.preventDefault();
   authMessage("login-error", "");
   const role = document.getElementById("login-role").value;
   const payload = { role, pin: document.getElementById("login-pin").value };
-  if (role === "employee") payload.employee_id = document.getElementById("login-employee").value;
   const button = document.getElementById("login-submit");
   button.disabled = true;
   try {
@@ -95,7 +80,6 @@ document.getElementById("admin-setup-form").addEventListener("submit", async eve
     document.getElementById("admin-setup-form").hidden = true;
     document.getElementById("login-form").hidden = false;
     document.getElementById("login-role").value = "admin";
-    document.getElementById("login-employee-field").hidden = true;
     authMessage("login-error", "Admin PIN saved. Please sign in.");
   } catch (error) {
     authMessage("setup-error", error.message);
@@ -116,7 +100,6 @@ document.getElementById("logout-button").addEventListener("click", async () => {
   document.getElementById("app-shell").hidden = true;
   document.getElementById("login-screen").hidden = false;
   try {
-    await loadLoginEmployees();
     const status = await authRequest("auth_status");
     if (!status.setup_completed) {
       document.getElementById("login-form").hidden = true;
@@ -126,11 +109,8 @@ document.getElementById("logout-button").addEventListener("click", async () => {
     if (saved) {
       const session = JSON.parse(saved);
       const identity = await authRequest("me", {}, session.token);
-      if (identity.role === "admin") showTimesheet(session);
-      else if (identity.employee && identity.employee.is_active) {
-        session.employee = identity.employee;
-        showTimesheet(session);
-      } else localStorage.removeItem(AUTH_SESSION);
+      if (identity.role === "admin" || identity.role === "user") showTimesheet(session);
+      else localStorage.removeItem(AUTH_SESSION);
     }
   } catch (error) {
     authMessage("login-error", error.message);
@@ -169,7 +149,6 @@ document.getElementById("admin-recovery-form").addEventListener("submit", async 
     document.getElementById("admin-recovery-form").hidden = true;
     document.getElementById("login-form").hidden = false;
     document.getElementById("login-role").value = "admin";
-    document.getElementById("login-employee-field").hidden = true;
     document.getElementById("login-error").textContent = "Admin PIN reset successfully. Sign in with your new PIN.";
     document.getElementById("recovery-secret").value = "";
     document.getElementById("recovery-pin").value = "";
