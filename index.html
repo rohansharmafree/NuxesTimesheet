@@ -7,7 +7,26 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <main class="shell">
+  <section class="login-screen" id="login-screen">
+    <form class="login-card" id="login-form">
+      <p class="eyebrow">TEAM WORKSPACE</p><h1>Team Timesheet</h1>
+      <p class="muted">Sign in with the PIN provided by your administrator.</p>
+      <div class="field"><label for="login-role">LOGIN AS</label><select id="login-role"><option value="employee">Employee</option><option value="admin">Admin</option></select></div>
+      <div class="field" id="login-employee-field"><label for="login-employee">YOUR NAME</label><select id="login-employee" required></select></div>
+      <div class="field"><label for="login-pin">PIN</label><input id="login-pin" type="password" inputmode="numeric" autocomplete="current-password" minlength="6" maxlength="12" required placeholder="Enter your PIN"></div>
+      <p class="error" id="login-error"></p><button class="primary" type="submit" id="login-submit">Sign in</button>
+      <p class="tiny muted">Your sign-in will be remembered on this device until you log out.</p>
+    </form>
+    <form class="login-card" id="admin-setup-form" hidden>
+      <p class="eyebrow">FIRST-TIME SETUP</p><h2>Set admin PIN</h2>
+      <p class="muted">Create the permanent admin PIN. You will need the one-time setup secret configured in Supabase.</p>
+      <div class="field"><label for="setup-secret">ONE-TIME SETUP SECRET</label><input id="setup-secret" type="password" required></div>
+      <div class="field"><label for="setup-pin">ADMIN PIN (6–12 DIGITS)</label><input id="setup-pin" type="password" inputmode="numeric" minlength="6" maxlength="12" required></div>
+      <p class="error" id="setup-error"></p><button class="primary" type="submit">Save admin PIN</button>
+      <button class="secondary" type="button" id="back-login">Back to login</button>
+    </form>
+  </section>
+  <main class="shell" id="app-shell" hidden>
     <header class="topbar">
       <div>
         <p class="eyebrow">TEAM WORKSPACE</p>
@@ -21,7 +40,7 @@
             <option value="admin">Admin</option>
           </select>
         </label>
-        <span class="role-pill" id="mode-pill">User mode</span>
+        <span class="role-pill" id="mode-pill">User mode</span><button class="secondary" id="logout-button" type="button">Log out</button>
       </div>
     </header>
 
