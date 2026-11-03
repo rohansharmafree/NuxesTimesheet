@@ -103,3 +103,26 @@ $("project-form").onsubmit=async e=>{
 $("member-form").insertAdjacentHTML("beforeend",'<div class="field"><label for="member-pin">EMPLOYEE PIN (6–12 DIGITS)</label><input id="member-pin" type="password" inputmode="numeric" minlength="6" maxlength="12" required placeholder="Set employee PIN"></div>');
 // Reorder PIN field before the submit button for a natural form layout.
 const pinInput=$("member-pin");$("member-form").insertBefore(pinInput.parentElement,$("member-form").querySelector('button[type="submit"]'));
+
+// Make employee removal persistent in the shared database (deactivate, preserve history).
+const renderManageWithServerRemoval = renderManage;
+renderManage = function() {
+  renderManageWithServerRemoval();
+  document.querySelectorAll("[data-del-member]").forEach(button => {
+    button.onclick = async () => {
+      const name = button.dataset.delMember;
+      const employee = window.sharedEmployees.find(item => item.name === name);
+      if (!employee) { toast("Employee record not found. Refresh the page."); return; }
+      if (!confirm(`Remove ${name} from the active team? Their historical timesheet records will be preserved.`)) return;
+      button.disabled = true;
+      try {
+        await sharedCall("remove_employee", { employee_id: employee.id });
+        await refreshSharedData();
+        toast("Employee removed from the active team. Historical records are preserved.");
+      } catch (error) {
+        button.disabled = false;
+        toast("Could not remove employee: " + error.message);
+      }
+    };
+  });
+};
