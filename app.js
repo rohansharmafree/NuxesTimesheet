@@ -1,0 +1,75 @@
+const $=id=>document.getElementById(id);
+const STORE="team-timesheet-local-v2";
+let state=loadState(),activeWeek=mondayOf(new Date()),reportWeek=mondayOf(new Date()),entries=new Map(),selected=new Set(),removed=new Set(),toastTimer;
+function uid(){return (crypto&&crypto.randomUUID)?crypto.randomUUID():`id-${Date.now()}-${Math.random().toString(16).slice(2)}`}
+function defaultState(){return {members:[],projects:[],tasks:[],entries:[]}}
+function loadState(){
+ try{
+  let raw=localStorage.getItem(STORE);
+  if(raw)return normalize(JSON.parse(raw));
+  // Fresh installation: start with an empty workspace.
+  return defaultState();
+ }catch{return defaultState()}
+}
+function normalize(s){return {members:Array.isArray(s.members)?s.members:[],projects:Array.isArray(s.projects)?s.projects:[],tasks:Array.isArray(s.tasks)?s.tasks:[],entries:Array.isArray(s.entries)?s.entries:[]}}
+function persist(){
+ try{localStorage.setItem(STORE,JSON.stringify(state));return true}
+ catch(err){toast("Could not save in this browser. Download a backup or check browser storage settings.");console.error(err);return false}
+}
+function mondayOf(x){let d=new Date(x.getFullYear(),x.getMonth(),x.getDate());d.setDate(d.getDate()-(d.getDay()+6)%7);return d}
+function addDays(d,n){let x=new Date(d);x.setDate(x.getDate()+n);return x}
+function iso(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}
+function parse(s){let [y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d)}
+function dates(){return Array.from({length:7},(_,i)=>addDays(activeWeek,i))}
+function fmt(d,o={day:"2-digit",month:"short"}){return d.toLocaleDateString("en-IN",o)}
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function clean(n){return n.toFixed(2).replace(/\.00$/,"")}
+function toast(s){$("toast").textContent=s;$("toast").classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>$("toast").classList.remove("show"),2300)}
+function isAdmin(){return $("mode-select").value==="admin"}
+function projectForTask(id){let t=state.tasks.find(x=>x.id===id);return t?state.projects.find(p=>p.id===t.projectId):null}
+function assignedProjects(name){return state.projects.filter(p=>(p.assignedTo||[]).includes(name))}
+function tab(name){document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("active",b.dataset.tab===name));["weekly","overview","manage"].forEach(n=>$(`${n}-panel`).hidden=n!==name);if(name==="overview")renderReport();if(name==="manage")renderManage()}
+function refreshMembers(){let sel=$("employee-select"),old=sel.value;sel.innerHTML=state.members.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join("");if(state.members.includes(old))sel.value=old}
+function updateWeekLabel(){$("week-label").textContent=`${fmt(activeWeek)} – ${fmt(addDays(activeWeek,6),{day:"2-digit",month:"short",year:"numeric"})}`;$("week-picker").value=iso(activeWeek)}
+function key(t,d,n){return `${n}|${t}|${d}`}
+function loadWeek(){updateWeekLabel();entries=new Map();selected=new Set();removed=new Set();let who=$("employee-select").value,start=iso(activeWeek),end=iso(addDays(activeWeek,6));state.entries.filter(e=>e.name===who&&e.date>=start&&e.date<=end).forEach(e=>{entries.set(key(e.taskId,e.date,who),Number(e.hours));selected.add(e.taskId)});renderGrid()}
+function renderGrid(){
+ let ds=dates(),who=$("employee-select").value,allowed=new Set(assignedProjects(who).map(p=>p.id));
+ let taskRows=state.tasks.filter(t=>selected.has(t.id));
+ // Preserve historical rows even if a project is no longer assigned.
+ $("timesheet-head").innerHTML=`<tr><th>Project / task</th>${ds.map(d=>`<th>${fmt(d,{weekday:"short"})}<br>${fmt(d)}</th>`).join("")}<th>Week total</th><th></th></tr>`;
+ $("timesheet-body").innerHTML=taskRows.map(t=>{let p=projectForTask(t.id);let vals=ds.map(d=>{let v=entries.get(key(t.id,iso(d),who))??"";return `<td><input class="hour-input" type="number" min="0" max="24" step=".25" data-task="${t.id}" data-date="${iso(d)}" value="${v}" aria-label="${esc(t.title)} ${fmt(d)}"></td>`}).join("");return `<tr><td><div class="task-name">${esc(t.title)}</div><div class="task-project">${esc(p?.name||"Project unavailable")}</div></td>${vals}<td class="weekly-total" id="total-${t.id}">0</td><td><button class="remove-row" data-remove="${t.id}" title="Remove from this week">×</button></td></tr>`}).join("")||`<tr><td colspan="10" class="muted">No tasks added to this week yet. Add a task under one of your assigned projects.</td></tr>`;
+ $("timesheet-foot").innerHTML=`<tr><th>Daily total</th>${ds.map(d=>`<th class="daily-total" id="day-${iso(d)}">0</th>`).join("")}<th class="weekly-total" id="grand-total">0</th><th></th></tr>`;
+ document.querySelectorAll(".hour-input").forEach(i=>i.addEventListener("input",e=>{let v=e.target.value===""?"":Number(e.target.value);if(v!==""&&(!Number.isFinite(v)||v<0||v>24)){e.target.value="";return}entries.set(key(e.target.dataset.task,e.target.dataset.date,who),v);totals()}));
+ document.querySelectorAll("[data-remove]").forEach(b=>b.addEventListener("click",()=>{let id=b.dataset.remove;selected.delete(id);removed.add(id);ds.forEach(d=>entries.delete(key(id,iso(d),who)));renderGrid()}));totals();
+}
+function totals(){let ds=dates(),who=$("employee-select").value,grand=0;state.tasks.filter(t=>selected.has(t.id)).forEach(t=>{let sum=ds.reduce((a,d)=>a+(Number(entries.get(key(t.id,iso(d),who)))||0),0);let el=$(`total-${t.id}`);if(el)el.textContent=clean(sum)});ds.forEach(d=>{let sum=state.tasks.filter(t=>selected.has(t.id)).reduce((a,t)=>a+(Number(entries.get(key(t.id,iso(d),who)))||0),0);$(`day-${iso(d)}`).textContent=clean(sum);grand+=sum});$("grand-total").textContent=clean(grand)}
+function saveWeek(){let who=$("employee-select").value;if(!who){toast("Add an employee first.");return}let start=iso(activeWeek),end=iso(addDays(activeWeek,6));state.entries=state.entries.filter(e=>!(e.name===who&&e.date>=start&&e.date<=end&&(selected.has(e.taskId)||removed.has(e.taskId))));for(let id of selected)for(let d of dates()){let h=Number(entries.get(key(id,iso(d),who)))||0;if(h>0)state.entries.push({name:who,taskId:id,date:iso(d),hours:h})}persist();removed.clear();$("save-status").textContent="Saved locally";toast("Weekly efforts saved on this computer.")}
+function renderProjectSelect(){let who=$("employee-select").value,projects=assignedProjects(who);$("task-project-select").innerHTML=projects.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join("");$("add-task").disabled=projects.length===0}
+function addTaskToWeek(projectId,title){let existing=state.tasks.find(t=>t.projectId===projectId&&t.title.toLowerCase()===title.toLowerCase());let t=existing||{id:uid(),projectId,title};if(!existing){state.tasks.push(t);persist()}selected.add(t.id);renderGrid()}
+function renderManage(){
+ $("member-list").innerHTML=state.members.map(n=>`<li><span>${esc(n)}</span><button data-del-member="${esc(n)}">Remove</button></li>`).join("")||"<li>No employees yet.</li>";
+ document.querySelectorAll("[data-del-member]").forEach(b=>b.onclick=()=>{let n=b.dataset.delMember;if(!confirm(`Remove ${n} from the employee list? Historical entries remain.`))return;state.members=state.members.filter(x=>x!==n);state.projects.forEach(p=>p.assignedTo=(p.assignedTo||[]).filter(x=>x!==n));persist();refreshMembers();renderManage();loadWeek()});
+ $("project-assignees").innerHTML=state.members.map(n=>`<label class="check-option"><input type="checkbox" value="${esc(n)}"> ${esc(n)}</label>`).join("")||'<span class="muted tiny">Add employees first.</span>';
+ $("project-list").innerHTML=state.projects.map(p=>`<li class="project-item"><span><strong>${esc(p.name)}</strong><small>${(p.assignedTo||[]).map(esc).join(", ")||"No employees assigned"}</small></span><button data-edit-project="${p.id}">Edit</button><button data-del-project="${p.id}">Remove</button></li>`).join("")||"<li>No projects created yet.</li>";
+ document.querySelectorAll("[data-edit-project]").forEach(b=>b.onclick=()=>editProject(b.dataset.editProject));
+ document.querySelectorAll("[data-del-project]").forEach(b=>b.onclick=()=>{let id=b.dataset.delProject;if(!confirm("Remove this project from active use? Existing timesheet records will remain in history."))return;state.projects=state.projects.filter(p=>p.id!==id);persist();renderManage();renderProjectSelect();loadWeek()});
+}
+function editProject(id){let p=state.projects.find(x=>x.id===id);if(!p)return;let name=prompt("Project name:",p.name);if(name===null)return;name=name.trim();if(!name){toast("Project name cannot be empty.");return}let assigned=prompt("Assign to which employees? Enter names separated by commas:",(p.assignedTo||[]).join(", "));if(assigned===null)return;let chosen=assigned.split(",").map(x=>x.trim()).filter(x=>state.members.includes(x));p.name=name;p.assignedTo=[...new Set(chosen)];persist();renderManage();renderProjectSelect();toast("Project assignments updated.")}
+function renderReport(){let start=iso(reportWeek),end=iso(addDays(reportWeek,6)),rows=state.entries.filter(e=>e.date>=start&&e.date<=end),group=new Map();rows.forEach(e=>{let t=state.tasks.find(t=>t.id===e.taskId)||{title:"(removed task)",projectId:null};let p=state.projects.find(p=>p.id===t.projectId)||{name:"(removed project)"};let k=`${p.name}|${e.name}|${t.title}`;let x=group.get(k)||{project:p.name,employee:e.name,task:t.title,hours:0};x.hours+=Number(e.hours);group.set(k,x)});let data=[...group.values()].sort((a,b)=>a.project.localeCompare(b.project)||a.employee.localeCompare(b.employee)||a.task.localeCompare(b.task));$("report-week-label").textContent=`${fmt(reportWeek)} – ${fmt(addDays(reportWeek,6),{day:"2-digit",month:"short",year:"numeric"})}`;$("report-body").innerHTML=data.map(x=>`<tr><td><strong>${esc(x.project)}</strong></td><td>${esc(x.employee)}</td><td>${esc(x.task)}</td><td><strong>${clean(x.hours)}</strong></td></tr>`).join("")||'<tr><td colspan="4" class="muted">No entries for this week.</td></tr>';$("team-total").textContent=clean(rows.reduce((a,e)=>a+Number(e.hours),0))+" h";$("people-total").textContent=new Set(rows.map(e=>e.name)).size;$("projects-total").textContent=new Set(data.map(x=>x.project)).size}
+function exportCSV(){let start=iso(reportWeek),end=iso(addDays(reportWeek,6)),rows=state.entries.filter(e=>e.date>=start&&e.date<=end),out=[["Project","Employee","Date","Task","Hours"],...rows.map(e=>{let t=state.tasks.find(t=>t.id===e.taskId)||{},p=state.projects.find(p=>p.id===t.projectId)||{};return[p.name||"",e.name,e.date,t.title||"",e.hours]})];let csv=out.map(r=>r.map(v=>`"${String(v??"").replace(/"/g,'""')}"`).join(",")).join("\r\n"),blob=new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`project_effort_${start}.csv`;a.click();URL.revokeObjectURL(a.href)}
+$("mode-select").onchange=()=>{let admin=isAdmin();$("mode-pill").textContent=admin?"Admin mode":"User mode";$("manage-tab").hidden=!admin;if(!admin&&!$("manage-panel").hidden)tab("weekly")};
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{if(b.dataset.tab==="manage"&&!isAdmin())return;tab(b.dataset.tab)});
+$("employee-select").onchange=()=>{loadWeek();renderProjectSelect()};
+$("prev-week").onclick=()=>{activeWeek=addDays(activeWeek,-7);loadWeek()};$("next-week").onclick=()=>{activeWeek=addDays(activeWeek,7);loadWeek()};$("today-week").onclick=()=>{activeWeek=mondayOf(new Date());loadWeek()};$("week-picker").onchange=e=>{if(e.target.value){activeWeek=mondayOf(parse(e.target.value));loadWeek()}};
+$("save-week").onclick=saveWeek;$("copy-last-week").onclick=()=>{let who=$("employee-select").value,prev=addDays(activeWeek,-7),a=iso(prev),b=iso(addDays(prev,6)),old=state.entries.filter(e=>e.name===who&&e.date>=a&&e.date<=b);if(!old.length){toast("No entries in previous week.");return}selected=new Set(old.map(e=>e.taskId));entries=new Map();old.forEach(e=>entries.set(key(e.taskId,iso(addDays(parse(e.date),7)),who),Number(e.hours)));renderGrid();toast("Previous week copied. Review and save.")};
+$("add-task").onclick=()=>{renderProjectSelect();$("task-dialog-error").textContent="";if(!$("task-project-select").options.length){toast("No projects assigned to this employee. Ask an admin to assign a project.");return}$("task-dialog").showModal()};
+$("close-task-dialog").onclick=$("cancel-task").onclick=()=>$("task-dialog").close();
+$("week-task-form").onsubmit=e=>{e.preventDefault();let projectId=$("task-project-select").value,title=$("new-task-title").value.trim();if(!projectId||!title){$("task-dialog-error").textContent="Choose a project and enter a task.";return}addTaskToWeek(projectId,title);$("new-task-title").value="";$("task-dialog").close()};
+$("member-form").onsubmit=e=>{e.preventDefault();let n=$("member-name").value.trim();if(state.members.some(x=>x.toLowerCase()===n.toLowerCase())){toast("That employee already exists.");return}state.members.push(n);state.members.sort((a,b)=>a.localeCompare(b));persist();$("member-name").value="";refreshMembers();renderManage();renderProjectSelect();toast("Employee added.")};
+$("project-form").onsubmit=e=>{e.preventDefault();let name=$("project-name").value.trim(),assigned=[...$("project-assignees").querySelectorAll("input:checked")].map(x=>x.value);if(!name){toast("Enter a project name.");return}if(!assigned.length){toast("Assign the project to at least one employee.");return}if(state.projects.some(p=>p.name.toLowerCase()===name.toLowerCase())){toast("That project already exists. Edit its assignments instead.");return}state.projects.push({id:uid(),name,assignedTo:assigned});persist();$("project-name").value="";renderManage();renderProjectSelect();toast("Project created and assigned.")};
+$("report-prev").onclick=()=>{reportWeek=addDays(reportWeek,-7);renderReport()};$("report-next").onclick=()=>{reportWeek=addDays(reportWeek,7);renderReport()};$("export-csv").onclick=exportCSV;
+$("backup-data").onclick=()=>{let blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="team-timesheet-backup.json";a.click();URL.revokeObjectURL(a.href)};
+$("restore-file").onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let x=normalize(JSON.parse(await f.text()));if(!Array.isArray(x.members)||!Array.isArray(x.projects)||!Array.isArray(x.tasks)||!Array.isArray(x.entries))throw Error("Invalid backup file");state=x;persist();refreshMembers();renderManage();renderProjectSelect();loadWeek();toast("Backup restored.")}catch(err){toast("Could not restore: "+err.message)}e.target.value=""};
+$("clear-data").onclick=()=>{if(confirm("Permanently clear all timesheet data in this browser? Download a backup first if needed.")){state=defaultState();persist();refreshMembers();renderManage();renderProjectSelect();loadWeek();toast("Local data cleared.")}};
+refreshMembers();renderManage();renderProjectSelect();loadWeek();$("mode-select").dispatchEvent(new Event("change"));
