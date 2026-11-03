@@ -116,7 +116,8 @@ document.getElementById("logout-button").addEventListener("click", async () => {
     authMessage("login-error", error.message);
   }
 })();
-document.getElementById("forgot-admin-pin").addEventListener("click", () => {
+const forgotAdminPinButton = document.getElementById("forgot-admin-pin");
+if (forgotAdminPinButton) forgotAdminPinButton.addEventListener("click", () => {
   document.getElementById("login-form").hidden = true;
   document.getElementById("admin-setup-form").hidden = true;
   document.getElementById("admin-recovery-form").hidden = false;
