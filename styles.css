@@ -35,3 +35,11 @@ button,.file-button{font:inherit;font-weight:600;border:0;border-radius:8px;padd
 
 .text-button{display:block;width:100%;margin:8px 0 0;padding:8px;background:transparent;color:#315f7b;font-size:12px;text-align:center}
 .text-button:hover{text-decoration:underline;background:#f5f8fa}
+
+
+.monthly-export{display:flex;justify-content:space-between;align-items:end;gap:18px;padding:18px 0;margin:8px 0 18px;border-top:1px solid #edf0f3;border-bottom:1px solid #edf0f3}
+.monthly-export h3{font-size:16px;margin-bottom:4px}
+.monthly-export-controls{display:flex;align-items:end;gap:10px;flex-wrap:wrap}
+.monthly-export-controls .field{margin:0;min-width:145px}
+.monthly-export-controls button{white-space:nowrap}
+@media(max-width:700px){.monthly-export{align-items:stretch;flex-direction:column}.monthly-export-controls{align-items:stretch;flex-direction:column}.monthly-export-controls .field{width:100%}}
