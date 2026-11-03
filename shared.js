@@ -156,7 +156,7 @@ function refreshMonthlyEmployeeOptions() {
 function exportMonthlyExcel() {
   if (!window.XLSX) { toast("Excel export library did not load. Refresh and try again."); return; }
   const month = $("monthly-report-month").value;
-  if (!/^\\d{4}-\\d{2}$/.test(month)) { toast("Choose a month first."); return; }
+  if (!/^\d{4}-\d{2}$/.test(month)) { toast("Choose a month first."); return; }
   const selectedEmployee = $("monthly-report-employee").value;
   const rows = state.entries.filter(e => e.date?.startsWith(month) &&
     (selectedEmployee === "__all__" || e.name === selectedEmployee));
