@@ -32,3 +32,6 @@ button,.file-button{font:inherit;font-weight:600;border:0;border-radius:8px;padd
  .login-screen{padding:18px}
  .login-card{padding:24px 20px}
 }
+
+.text-button{display:block;width:100%;margin:8px 0 0;padding:8px;background:transparent;color:#315f7b;font-size:12px;text-align:center}
+.text-button:hover{text-decoration:underline;background:#f5f8fa}
