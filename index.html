@@ -4,35 +4,28 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Workspace</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=20261103b">
 </head>
 <body>
   <section class="login-screen" id="login-screen">
     <form class="login-card" id="login-form">
-       
       <div class="field"><label for="login-role">LOGIN AS</label><select id="login-role"><option value="user">User</option><option value="admin">Admin</option></select></div>
-       
-      <div class="field"><label for="login-pin">PIN</label><input id="login-pin" type="password" inputmode="numeric" autocomplete="current-password" minlength="6" maxlength="12" required placeholder="Enter your PIN"></div>
-      <p class="error" id="login-error"></p><button class="primary" type="submit" id="login-submit">Sign in</button>
-       
-      <button class="text-button" type="button" id="forgot-admin-pin">Forgot admin PIN?</button>
+      <div class="field"><label for="login-pin">PIN</label><input id="login-pin" type="password" inputmode="numeric" autocomplete="current-password" minlength="6" maxlength="12" required placeholder="Enter PIN"></div>
+      <p class="error" id="login-error"></p>
+      <button class="primary" type="submit" id="login-submit">Sign in</button>
     </form>
     <form class="login-card" id="admin-setup-form" hidden>
-      <p class="eyebrow">FIRST-TIME SETUP</p><h2>Set admin PIN</h2>
-      <p class="muted">Create the permanent admin PIN. You will need the one-time setup secret configured in Supabase.</p>
       <div class="field"><label for="setup-secret">ONE-TIME SETUP SECRET</label><input id="setup-secret" type="password" required></div>
-      <div class="field"><label for="setup-pin">ADMIN PIN (6–12 DIGITS)</label><input id="setup-pin" type="password" inputmode="numeric" minlength="6" maxlength="12" required></div>
-      <p class="error" id="setup-error"></p><button class="primary" type="submit">Save admin PIN</button>
-      <button class="secondary" type="button" id="back-login">Back to login</button>
+      <div class="field"><label for="setup-pin">ADMIN PIN</label><input id="setup-pin" type="password" inputmode="numeric" minlength="6" maxlength="12" required></div>
+      <p class="error" id="setup-error"></p><button class="primary" type="submit">Save</button>
+      <button class="secondary" type="button" id="back-login">Back</button>
     </form>
     <form class="login-card" id="admin-recovery-form" hidden>
-      <p class="eyebrow">ACCOUNT RECOVERY</p><h2>Reset admin PIN</h2>
-      <p class="muted">Enter your private recovery credential configured in Supabase and choose a new admin PIN.</p>
-      <div class="field"><label for="recovery-secret">ADMIN RECOVERY CREDENTIAL</label><input id="recovery-secret" type="password" autocomplete="off" required></div>
-      <div class="field"><label for="recovery-pin">NEW ADMIN PIN (6–12 DIGITS)</label><input id="recovery-pin" type="password" inputmode="numeric" minlength="6" maxlength="12" required></div>
-      <div class="field"><label for="recovery-pin-confirm">CONFIRM NEW ADMIN PIN</label><input id="recovery-pin-confirm" type="password" inputmode="numeric" minlength="6" maxlength="12" required></div>
-      <p class="error" id="recovery-error"></p><button class="primary" type="submit" id="recovery-submit">Reset admin PIN</button>
-      <button class="secondary" type="button" id="cancel-recovery">Back to login</button>
+      <div class="field"><label for="recovery-secret">RECOVERY CREDENTIAL</label><input id="recovery-secret" type="password" autocomplete="off" required></div>
+      <div class="field"><label for="recovery-pin">NEW ADMIN PIN</label><input id="recovery-pin" type="password" inputmode="numeric" minlength="6" maxlength="12" required></div>
+      <div class="field"><label for="recovery-pin-confirm">CONFIRM NEW PIN</label><input id="recovery-pin-confirm" type="password" inputmode="numeric" minlength="6" maxlength="12" required></div>
+      <p class="error" id="recovery-error"></p><button class="primary" type="submit" id="recovery-submit">Reset PIN</button>
+      <button class="secondary" type="button" id="cancel-recovery">Back</button>
     </form>
   </section>
   <main class="shell" id="app-shell" hidden>
@@ -153,8 +146,8 @@
   </dialog>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script src="app.js"></script>
-  <script src="auth.js"></script>
-  <script src="shared.js"></script>
+  <script src="app.js?v=20261103b"></script>
+  <script src="auth.js?v=20261103b"></script>
+  <script src="shared.js?v=20261103b"></script>
 </body>
 </html>
